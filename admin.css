@@ -1,0 +1,228 @@
+/* 
+  admin.css - Modern Clean Dashboard Style
+  ------------------------------------------------------------------
+  Inspired by pastel, minimalistic UI dashboards
+*/
+
+/* Google Font Import (Optional) */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+/* Basic Reset & Font Setup */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html, body {
+  height: 100%;
+  font-family: 'Poppins', sans-serif;
+  background-color: #F8F9FB; /* Light pastel background */
+  color: #222;
+}
+
+/* Container Utility */
+.main-wrapper {
+  width: 90%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 0 60px; /* Extra bottom padding if needed for content */
+}
+
+/* Navbar / Top Bar */
+.navbar {
+  background: linear-gradient(145deg, #8A93FD, #A2A8F7); /* Pastel gradient */
+  padding: 15px 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.navbar-container {
+  width: 90%;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+}
+.navbar-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+}
+.navbar-spacer {
+  flex: 1;
+}
+
+/* Metrics Section */
+.metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+.metric-card {
+  flex: 1;
+  min-width: 220px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.3s;
+}
+.metric-card:hover {
+  transform: translateY(-3px);
+}
+.metric-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #666;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.metric-value {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Controls (Filter & Search) */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.control-group {
+  display: flex;
+  flex-direction: column;
+}
+.control-label {
+  font-weight: 500;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+}
+.control-input {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.3s;
+  width: 220px;
+}
+.control-input:focus {
+  border-color: #8A93FD;
+}
+.search-bar {
+  width: 280px;
+}
+.export-btn {
+  background-color: #8A93FD;
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 12px 16px;
+  border: none;
+  cursor: pointer;
+  margin-left: auto; /* push to the right if needed */
+}
+.export-btn:hover {
+  background-color: #7E88FC;
+}
+
+/* Subscriptions Section */
+.subscriptions {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #444;
+}
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+/* Styled Table */
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+.styled-table thead tr {
+  background: #8A93FD;
+  color: #fff;
+}
+.styled-table th, .styled-table td {
+  text-align: center;
+  padding: 12px;
+  border-bottom: 1px solid #E2E2E2;
+}
+.styled-table tbody tr:nth-child(even) {
+  background-color: #FAFAFA;
+}
+.styled-table th {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.styled-table td {
+  font-size: 0.88rem;
+  color: #555;
+  vertical-align: middle;
+}
+
+/* Action Buttons */
+.actions-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.actions-btns button {
+  background-color: #00aaff;
+  color: #fff;
+  font-size: 0.85rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 8px 12px;
+  transition: background 0.3s;
+}
+.actions-btns button:hover {
+  background-color: #0088cc;
+}
+
+/* Responsive Layout */
+@media (max-width: 992px) {
+  .metrics {
+    flex-direction: column;
+  }
+  .control-input {
+    width: 100%;
+    max-width: 300px;
+  }
+  .search-bar {
+    max-width: 400px;
+  }
+  .styled-table {
+    min-width: 650px;
+  }
+}
+@media (max-width: 576px) {
+  .control-input {
+    max-width: 100%;
+  }
+  .styled-table {
+    min-width: 580px;
+  }
+}
