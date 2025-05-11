@@ -7,42 +7,50 @@ const path        = require('path');
 const nodemailer  = require('nodemailer');
 
 const app = express();
-app.use(cors());
+
+// Habilita CORS apenas para rotas /api
+app.use('/api', cors());
+
+// Parse JSON bodies
 app.use(bodyParser.json());
 
-// serve uploaded proofs
+// Serve front-end estático (admin.html, admin.js, admin.css)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Se quiser que a raiz sirva diretamente o admin.html:
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// Serve uploads de comprovantes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Multer config for file uploads (proof)
+// Configuração do Multer para upload de arquivos (proof)
 const upload = multer({
   dest: path.join(__dirname, 'uploads'),
   limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-// In-memory store (swap for DB in production)
+// Armazenamento em memória (substituir por DB real em produção)
 let subscriptions = [];
 
-/**
- * HELPERS
- */
-
-// Generate athlete number: 000-0000-xxxxx
+/** Gera número de atleta: 000-0000-xxxxx */
 function generateAthleteNumber(id) {
   const seq = String(id).padStart(5, '0');
   return `000-0000-${seq}`;
 }
 
-// Nodemailer transporter (Gmail example)
+// Configuração do Nodemailer (exemplo Gmail)
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER,   // your Gmail address
-    pass: process.env.EMAIL_PASS    // your Gmail app-password
+    user: process.env.EMAIL_USER,   // seu Gmail
+    pass: process.env.EMAIL_PASS    // sua app-senha
   }
 });
 
 /**
- * 1) Webhook: new subscription + optional proof file
+ * 1) Webhook: recebe nova inscrição + opcional comprovante
  */
 app.post('/api/webhook', upload.single('proof'), (req, res) => {
   const { name, email, phone, event, kit } = req.body;
@@ -62,7 +70,7 @@ app.post('/api/webhook', upload.single('proof'), (req, res) => {
     phone_number: phone || '',
     event: event || '',
     kit: kit || '',
-    athlete_number: '',             // will be set on verification
+    athlete_number: '',             // será preenchido ao verificar
     payment_status: 'pending',
     proof_file_url: proofUrl,
     subscription_code: `SUB${String(id).padStart(6, '0')}`,
@@ -75,14 +83,14 @@ app.post('/api/webhook', upload.single('proof'), (req, res) => {
 });
 
 /**
- * 2) List subscriptions
+ * 2) Lista todas as inscrições
  */
 app.get('/api/subscriptions', (req, res) => {
   res.json(subscriptions);
 });
 
 /**
- * 3) Update payment status → generate athlete number + send email
+ * 3) Atualiza status de pagamento → gera número de atleta + envia e-mail
  */
 app.patch('/api/subscriptions/:id', async (req, res) => {
   const id     = parseInt(req.params.id, 10);
@@ -94,7 +102,6 @@ app.patch('/api/subscriptions/:id', async (req, res) => {
   }
   sub.payment_status = status;
 
-  // on verification, generate number & send email
   if (status === 'verified') {
     sub.athlete_number = generateAthleteNumber(id);
 
@@ -117,7 +124,6 @@ app.patch('/api/subscriptions/:id', async (req, res) => {
       console.log(`E-mail enviado para ${sub.email}`);
     } catch (err) {
       console.error('Erro ao enviar e-mail:', err);
-      // you may want to unset athlete_number on failure, up to you
     }
   }
 
@@ -125,7 +131,7 @@ app.patch('/api/subscriptions/:id', async (req, res) => {
 });
 
 /**
- * 4) Optional: export CSV
+ * 4) Exporta CSV das inscrições
  */
 app.get('/api/subscriptions/export', (req, res) => {
   const header = ['Nome','Email','Telefone','Evento','Kit','Nº Atleta','Status'];
@@ -142,8 +148,8 @@ app.get('/api/subscriptions/export', (req, res) => {
   res.type('text/csv').send(csv);
 });
 
-// Start server
+// Inicia o servidor
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => 
+app.listen(PORT, () =>
   console.log(`🚀 Server running on http://localhost:${PORT}`)
 );

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lifeguard220 | Admin Dashboard</title>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="navbar-container">
+      <h1 class="navbar-title">Lifeguard220 Dashboard</h1>
+      <div class="navbar-spacer"></div>
+      <!-- If you want user profile or notifications, you can add them here -->
+    </div>
+  </header>
+
+  <!-- Main Wrapper -->
+  <div class="main-wrapper">
+    
+    <!-- Metrics Section -->
+    <section class="metrics">
+      <div class="metric-card">
+        <h2 class="metric-title">Total de Inscrições</h2>
+        <p class="metric-value" id="total-subscriptions">0</p>
+      </div>
+      <div class="metric-card">
+        <h2 class="metric-title">Pagamentos Pendentes</h2>
+        <p class="metric-value" id="pending-payments">0</p>
+      </div>
+      <div class="metric-card">
+        <h2 class="metric-title">Pagamentos Verificados</h2>
+        <p class="metric-value" id="verified-payments">0</p>
+      </div>
+      <div class="metric-card">
+        <h2 class="metric-title">Seleção de Kit</h2>
+        <p class="metric-value" id="kit-breakdown">-</p>
+      </div>
+    </section>
+
+    <!-- Controls: Filter & Search -->
+    <section class="controls">
+      <div class="control-group">
+        <label for="event-filter" class="control-label">Filtrar por Evento:</label>
+        <select id="event-filter" class="control-input">
+          <option value="all">Todos</option>
+          <option value="Ilha Grande – Realizada">Ilha Grande – Realizada</option>
+          <option value="Ilhabela – 06 e 07 de Junho 2025">Ilhabela – 06 e 07 de Junho 2025</option>
+          <option value="Amazônia – 25 e 26 de Julho 2025">Amazônia – 25 e 26 de Julho 2025</option>
+          <option value="Nova Lima – 10 e 11 de Outubro 2025">Nova Lima – 10 e 11 de Outubro 2025</option>
+          <option value="Búzios – 28 e 29 de Novembro 2025">Búzios – 28 e 29 de Novembro 2025</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <input 
+          type="text" 
+          id="search-input" 
+          class="control-input search-bar" 
+          placeholder="Buscar por Nome ou Nº Atleta"
+        >
+      </div>
+      <button id="export-btn" class="btn export-btn">Exportar CSV</button>
+    </section>
+
+    <!-- Subscriptions Table -->
+    <section class="subscriptions">
+      <h2 class="section-title">Inscrições</h2>
+      <div class="table-container">
+        <table id="subscriptions-table" class="styled-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Telefone</th>
+              <th>Evento</th>
+              <th>Kit</th>
+              <th>Nº Atleta</th>
+              <th>Categoria</th>
+              <th>Status de Pagamento</th>
+              <th>Comprovante</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rows inserted via admin.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div><!-- /.main-wrapper -->
+
+  <script src="admin.js"></script>
+</body>
+</html>
