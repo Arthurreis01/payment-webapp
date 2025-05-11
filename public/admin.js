@@ -3,34 +3,26 @@
 // ————————————————
 // CONFIGURAÇÃO
 // ————————————————
-// Use sempre /api, já que front e back estão no mesmo host:port
-const API_BASE      = '/api';
-const USE_FAKE_DATA = false;    // nunca usaremos fake data agora
+// Build the API base dynamically so it works anywhere:
+// Locally it'll resolve to http(s)://localhost:3000/api
+// In production it'll resolve to https://<your-backend-domain>/api
+const API_BASE = `${window.location.protocol}//${window.location.host}/api`;
 
 let allSubscriptions = [];
 
-// ————————————————
-// PONTO DE ENTRADA
-// ————————————————
 document.addEventListener("DOMContentLoaded", () => {
   loadSubscriptions();
 
-  // filtros e busca
   document.getElementById("event-filter")
     .addEventListener("change", filterAndRender);
   document.getElementById("search-input")
     .addEventListener("input", filterAndRender);
-
-  // exportar CSV usando nossa rota /export
   document.getElementById("export-btn")
     .addEventListener("click", () => {
       window.location.href = `${API_BASE}/subscriptions/export`;
     });
 });
 
-// ————————————————
-// CARREGA INSCRIÇÕES DA API
-// ————————————————
 function loadSubscriptions() {
   fetch(`${API_BASE}/subscriptions`)
     .then(res => {
@@ -46,14 +38,11 @@ function loadSubscriptions() {
       console.error("Erro ao carregar inscrições:", err);
       alert(
         "Não foi possível carregar inscrições. " +
-        "Verifique se o servidor está rodando em http://localhost:3000"
+        `Verifique se o servidor está disponível em ${API_BASE}`
       );
     });
 }
 
-// ————————————————
-// FILTRA E RENDERIZA
-// ————————————————
 function filterAndRender() {
   const eventFilter = document.getElementById("event-filter").value;
   const searchQuery = document.getElementById("search-input").value.toLowerCase();
@@ -68,44 +57,35 @@ function filterAndRender() {
       (s.athlete_number || "").toLowerCase().includes(searchQuery)
     );
   }
-
   populateSubscriptionsTable(filtered);
 }
 
-// ————————————————
-// ATUALIZA OS CARDS DE MÉTRICAS
-// ————————————————
 function updateDashboard(subs) {
-  const total    = subs.length;
-  const pending  = subs.filter(s => s.payment_status === "pending").length;
-  const verified = subs.filter(s => s.payment_status === "verified").length;
-
-  document.getElementById("total-subscriptions").textContent  = total;
-  document.getElementById("pending-payments").textContent    = pending;
-  document.getElementById("verified-payments").textContent   = verified;
+  document.getElementById("total-subscriptions").textContent =
+    subs.length;
+  document.getElementById("pending-payments").textContent =
+    subs.filter(s => s.payment_status === "pending").length;
+  document.getElementById("verified-payments").textContent =
+    subs.filter(s => s.payment_status === "verified").length;
 
   const kitCounts = {};
   subs.forEach(s => {
     if (s.kit) kitCounts[s.kit] = (kitCounts[s.kit]||0) + 1;
   });
-  const breakdown = Object.entries(kitCounts)
-    .map(([k,c]) => `${k}: ${c}`)
-    .join(" | ");
-  document.getElementById("kit-breakdown")
-    .textContent = breakdown || "Nenhum";
+  document.getElementById("kit-breakdown").textContent =
+    Object.entries(kitCounts)
+          .map(([k,c]) => `${k}: ${c}`)
+          .join(" | ") || "Nenhum";
 }
 
-// ————————————————
-// POPULA A TABELA DE INSCRIÇÕES
-// ————————————————
 function populateSubscriptionsTable(subs) {
   const tbody = document.querySelector("#subscriptions-table tbody");
   tbody.innerHTML = "";
 
   subs.forEach(s => {
-    let icon = s.payment_status === "pending"  ? "⏳"
-             : s.payment_status === "verified" ? "✅"
-             : "❌";
+    const icon = s.payment_status === "pending"  ? "⏳"
+               : s.payment_status === "verified" ? "✅"
+               : "❌";
 
     const proofLink = s.proof_file_url
       ? `<a href="${s.proof_file_url}" target="_blank">Ver</a>`
@@ -126,15 +106,11 @@ function populateSubscriptionsTable(subs) {
       <td>${s.athlete_number || "-"}</td>
       <td>${icon} ${s.payment_status}</td>
       <td>${proofLink}</td>
-      <td class="actions-btns">${actions}</td>
-    `;
+      <td class="actions-btns">${actions}</td>`;
     tbody.appendChild(tr);
   });
 }
 
-// ————————————————
-// ATUALIZA STATUS via PATCH na API
-// ————————————————
 window.updatePaymentStatus = function(id, status) {
   fetch(`${API_BASE}/subscriptions/${id}`, {
     method: "PATCH",
