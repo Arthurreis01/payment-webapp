@@ -8,17 +8,18 @@ const nodemailer = require('nodemailer');
 
 const app = express();
 
-// Enable CORS only on /api routes
+// Permite CORS em todas as rotas /api
 app.use('/api', cors());
 app.use(bodyParser.json());
 
-// Serve static from public/ (will automatically pick up index.html)
+// Serve arquivos estáticos da pasta public/
+// (index.html, index.css, admin.js, etc.)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve proof uploads
+// Pasta de uploads (comprovantes)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Multer for proof uploads
+// Configura Multer para aceitar um único campo "proof"
 const upload = multer({
   dest: path.join(__dirname, 'uploads'),
   limits: { fileSize: 10 * 1024 * 1024 }
@@ -26,10 +27,12 @@ const upload = multer({
 
 let subscriptions = [];
 
+// Gera número de atleta
 function generateAthleteNumber(id) {
   return `000-0000-${String(id).padStart(5,'0')}`;
 }
 
+// Configura o transporte de e-mail
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -38,6 +41,9 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+/**
+ * 1) Webhook: cria nova inscrição
+ */
 app.post('/api/webhook', upload.single('proof'), (req, res) => {
   const { name, email, phone, event, kit } = req.body;
   if (!name || !email) {
@@ -68,12 +74,18 @@ app.post('/api/webhook', upload.single('proof'), (req, res) => {
   res.json({ message: 'Inscrição recebida.', subscription: sub });
 });
 
+/**
+ * 2) Lista todas as inscrições
+ */
 app.get('/api/subscriptions', (req, res) => {
   res.json(subscriptions);
 });
 
+/**
+ * 3) Atualiza status de pagamento
+ */
 app.patch('/api/subscriptions/:id', async (req, res) => {
-  const id     = +req.params.id;
+  const id     = parseInt(req.params.id, 10);
   const status = req.body.payment_status;
   const sub    = subscriptions.find(s => s.id === id);
   if (!sub) return res.status(404).json({ error: 'Inscrição não encontrada.' });
@@ -88,19 +100,23 @@ app.patch('/api/subscriptions/:id', async (req, res) => {
         subject: 'Seu número de atleta está disponível!',
         html: `
           <p>Olá ${sub.name},</p>
-          <p>Seu pagamento foi <strong>verificado</strong>.</p>
+          <p>Seu pagamento foi <strong>verificado</strong> com sucesso.</p>
           <p>Seu <strong>Número de Atleta</strong>:<br>
              <code>${sub.athlete_number}</code></p>
           <p>Aproveite o evento!</p>`
       });
       console.log(`E-mail enviado para ${sub.email}`);
     } catch (err) {
-      console.error('Erro no e-mail:', err);
+      console.error('Erro ao enviar e-mail:', err);
     }
   }
+
   res.json({ message: 'Status atualizado.', subscription: sub });
 });
 
+/**
+ * 4) Exporta CSV
+ */
 app.get('/api/subscriptions/export', (req, res) => {
   const header = ['Nome','Email','Telefone','Evento','Kit','Nº Atleta','Status'];
   const rows   = subscriptions.map(s => [
@@ -113,6 +129,7 @@ app.get('/api/subscriptions/export', (req, res) => {
   res.type('text/csv').send(csv);
 });
 
+// Inicia o servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
   console.log(`🚀 Server running on http://localhost:${PORT}`)
