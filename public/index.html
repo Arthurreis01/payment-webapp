@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Lifeguard220 | Admin Dashboard</title>
+  <title>Lifeguard220 | Dashboard</title>
   <link rel="stylesheet" href="admin.css" />
 </head>
 <body>
@@ -12,8 +12,6 @@
   <header class="navbar">
     <div class="navbar-container">
       <h1 class="navbar-title">Lifeguard220 Dashboard</h1>
-      <div class="navbar-spacer"></div>
-      <!-- If you want user profile or notifications, you can add them here -->
     </div>
   </header>
 
@@ -40,17 +38,12 @@
       </div>
     </section>
 
-    <!-- Controls: Filter & Search -->
+    <!-- Controls: Filter, Search & Actions -->
     <section class="controls">
       <div class="control-group">
         <label for="event-filter" class="control-label">Filtrar por Evento:</label>
         <select id="event-filter" class="control-input">
-          <option value="all">Todos</option>
-          <option value="Ilha Grande – Realizada">Ilha Grande – Realizada</option>
-          <option value="Ilhabela – 06 e 07 de Junho 2025">Ilhabela – 06 e 07 de Junho 2025</option>
-          <option value="Amazônia – 25 e 26 de Julho 2025">Amazônia – 25 e 26 de Julho 2025</option>
-          <option value="Nova Lima – 10 e 11 de Outubro 2025">Nova Lima – 10 e 11 de Outubro 2025</option>
-          <option value="Búzios – 28 e 29 de Novembro 2025">Búzios – 28 e 29 de Novembro 2025</option>
+          <!-- opções serão populadas via JS -->
         </select>
       </div>
       <div class="control-group">
@@ -59,9 +52,10 @@
           id="search-input" 
           class="control-input search-bar" 
           placeholder="Buscar por Nome ou Nº Atleta"
-        >
+        />
       </div>
       <button id="export-btn" class="btn export-btn">Exportar CSV</button>
+      <button id="send-email-btn" class="btn send-email-btn">Enviar Lista de Atletas</button>
     </section>
 
     <!-- Subscriptions Table -->
@@ -71,20 +65,22 @@
         <table id="subscriptions-table" class="styled-table">
           <thead>
             <tr>
-              <th>Nome</th>
+              <th>Data</th>
+              <th>Carimbo de data/hora</th>
+              <th>Nome completo</th>
               <th>Email</th>
               <th>Telefone</th>
               <th>Evento</th>
               <th>Kit</th>
-              <th>Nº Atleta</th>
               <th>Categoria</th>
+              <th>Comprovante de pagamento</th>
               <th>Status de Pagamento</th>
-              <th>Comprovante</th>
+              <th>Número de Atleta</th>
               <th>Ações</th>
             </tr>
           </thead>
           <tbody>
-            <!-- Rows inserted via admin.js -->
+            <!-- Linhas serão inseridas pelo admin.js -->
           </tbody>
         </table>
       </div>
