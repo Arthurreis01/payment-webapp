@@ -6,8 +6,9 @@ const SHEET_NAME      = 'Form Responses 1';
 const GSHEET_JSON_URL =
   `https://docs.google.com/spreadsheets/d/${SHEET_ID}` +
   `/gviz/tq?sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
-// Sua URL do Apps Script Web App (deploy como “anônimo”)
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfy…/exec';
+
+// Proxy local para Apps Script (evita CORS)
+const APPS_SCRIPT_URL = '/script';
 
 let allSubscriptions = [];
 
@@ -35,31 +36,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function loadSubscriptions() {
   fetch(GSHEET_JSON_URL)
-    .then(r => r.text())
+    .then(res => res.text())
     .then(text => {
       const start = text.indexOf('{');
       const end   = text.lastIndexOf('}');
       const data  = JSON.parse(text.slice(start, end + 1));
 
-      const cols = data.table.cols.map(c => c.label || c.id);
-      const rows = data.table.rows.map(r => r.c.map(cell => cell ? cell.v : ''));
+      const cols     = data.table.cols.map(c => c.label || c.id);
+      const proofIdx = cols.indexOf('Comprovante de pagamento');
 
-      allSubscriptions = rows.map((row, idx) => {
+      allSubscriptions = data.table.rows.map((rowEntry, idx) => {
         const obj = {};
-        cols.forEach((col,i) => obj[col] = row[i] || '');
+        rowEntry.c.forEach((cell, i) => {
+          obj[cols[i]] = cell && cell.v ? cell.v : '';
+        });
+
+        let proofUrl = '';
+        const cellObj = rowEntry.c[proofIdx];
+        if (cellObj) {
+          if (cellObj.f) {
+            const m = cellObj.f.match(/href="([^"]+)"/);
+            if (m) proofUrl = m[1];
+          } else if (cellObj.v) {
+            proofUrl = cellObj.v;
+          }
+        }
+
         return {
-          id:             idx + 1,
-          timestamp:      obj['Carimbo de data/hora'],
-          date:           obj['Carimbo de data/hora']?.split(' ')[0] || '',
-          name:           obj['Nome completo'],
-          email:          obj['Email'],
-          phone_number:   obj['Telefone'],
-          event:          obj['Evento'],
-          kit:            obj['Kit'],
-          category:       obj['Categoria'],
-          proof_file_url: obj['Comprovante de pagamento'],
-          athlete_number: obj['Número de Atleta']   || '',
-          payment_status: obj['Status']             || 'pending'
+          id:               idx + 1,
+          timestamp:        obj['Carimbo de data/hora'],
+          date:             obj['Carimbo de data/hora']?.split(' ')[0] || '',
+          name:             obj['Nome completo'],
+          email:            obj['Email'],
+          phone_number:     obj['Telefone'],
+          event:            obj['Evento'],
+          kit:              obj['Kit'],
+          category:         obj['Categoria'],
+          proof_file_url:   proofUrl,
+          athlete_number:   obj['Número de Atleta'] || '',
+          payment_status:   obj['Status']             || 'pending'
         };
       });
 
@@ -73,28 +88,29 @@ function loadSubscriptions() {
     });
 }
 
-// Popula o <select> de eventos com os valores únicos do sheet
 function populateEventFilter(subs) {
   const sel = document.getElementById('event-filter');
-  sel.innerHTML = ''; 
-  const events = Array.from(new Set(subs.map(s => s.event))).filter(e => e);
-  const allOpt = new Option('Todos', 'all');
-  sel.appendChild(allOpt);
-  events.forEach(ev => {
-    sel.appendChild(new Option(ev, ev));
-  });
+  sel.innerHTML = '';
+  sel.appendChild(new Option('Todos', 'all'));
+  Array.from(new Set(subs.map(s => s.event)))
+    .filter(e => e)
+    .forEach(ev => sel.appendChild(new Option(ev, ev)));
 }
 
 function filterAndRender() {
   const evFilter = document.getElementById('event-filter').value;
-  const q        = document.getElementById('search-input').value.toLowerCase();
-  let filtered   = allSubscriptions;
+  const query    = document.getElementById('search-input').value.toLowerCase();
 
-  if (evFilter !== 'all') filtered = filtered.filter(s => s.event === evFilter);
-  if (q) filtered = filtered.filter(s =>
-    s.name.toLowerCase().includes(q) ||
-    (s.athlete_number || '').toLowerCase().includes(q)
-  );
+  let filtered = allSubscriptions;
+  if (evFilter !== 'all') {
+    filtered = filtered.filter(s => s.event === evFilter);
+  }
+  if (query) {
+    filtered = filtered.filter(s =>
+      s.name.toLowerCase().includes(query) ||
+      s.athlete_number.toLowerCase().includes(query)
+    );
+  }
 
   populateSubscriptionsTable(filtered);
 }
@@ -107,12 +123,14 @@ function updateDashboard(subs) {
   document.getElementById('verified-payments').textContent =
     subs.filter(s => s.payment_status === 'verified').length;
 
-  const counts = {};
+  const kitCounts = {};
   subs.forEach(s => {
-    if (s.kit) counts[s.kit] = (counts[s.kit]||0) + 1;
+    if (s.kit) kitCounts[s.kit] = (kitCounts[s.kit] || 0) + 1;
   });
   document.getElementById('kit-breakdown').textContent =
-    Object.entries(counts).map(([k,c]) => `${k}: ${c}`).join(' | ') || 'Nenhum';
+    Object.entries(kitCounts)
+      .map(([k, c]) => `${k}: ${c}`)
+      .join(' | ') || 'Nenhum';
 }
 
 function populateSubscriptionsTable(subs) {
@@ -126,6 +144,7 @@ function populateSubscriptionsTable(subs) {
     const proofLink = s.proof_file_url
       ? `<a href="${s.proof_file_url}" target="_blank">Ver</a>`
       : '-';
+    const emailBtn = `<button onclick="sendAthleteEmail(${s.id})">✉️</button>`;
     const actions = s.payment_status === 'pending'
       ? `<button onclick="updatePaymentStatus(${s.id},'verified')">Aprovar</button>
          <button onclick="updatePaymentStatus(${s.id},'rejected')">Rejeitar</button>`
@@ -144,24 +163,57 @@ function populateSubscriptionsTable(subs) {
       <td>${proofLink}</td>
       <td>${icon} ${s.payment_status}</td>
       <td>${s.athlete_number || '-'}</td>
+      <td>${emailBtn}</td>
       <td class="actions-btns">${actions}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-window.updatePaymentStatus = (rowId, status) => {
-  fetch(APPS_SCRIPT_URL, {
+// Replace your old updatePaymentStatus with this:
+window.updatePaymentStatus = function(rowId, status) {
+  fetch('/script', {
     method: 'POST',
-    headers:{ 'Content-Type':'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action:'updateStatus', row:rowId, status })
   })
-  .then(r=>r.json())
-  .then(j=>{
-    if (j.success) loadSubscriptions();
-    else throw new Error(j.error||'Erro desconhecido');
+  .then(async res => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch(e) {
+      console.error('Resposta do /script (não é JSON):', text);
+      throw new Error('Resposta inesperada do servidor ao atualizar.');
+    }
+    if (!data.success) throw new Error(data.error || 'Erro desconhecido');
+    loadSubscriptions();
   })
-  .catch(err=>alert('Falha: '+err.message));
+  .catch(err => alert('Falha ao atualizar: ' + err.message));
+};
+
+// Replace your old sendAthleteEmail with this:
+window.sendAthleteEmail = function(rowId) {
+  fetch('/script', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action:'sendSingleEmail', row:rowId })
+  })
+  .then(async res => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch(e) {
+      console.error('Resposta do /script (não é JSON):', text);
+      throw new Error('Resposta inesperada do servidor ao enviar e-mail.');
+    }
+    if (!data.success) throw new Error(data.error || 'Erro desconhecido');
+    alert('E-mail enviado com sucesso ao atleta!');
+  })
+  .catch(err => alert('Falha ao enviar e-mail: ' + err.message));
 };
 
 function sendAthleteList(destEmail) {
@@ -170,10 +222,10 @@ function sendAthleteList(destEmail) {
     headers:{ 'Content-Type':'application/json' },
     body: JSON.stringify({ action:'sendEmail', email:destEmail })
   })
-  .then(r=>r.json())
-  .then(j=>{
+  .then(r => r.json())
+  .then(j => {
     if (j.success) alert('Email enviado com sucesso!');
-    else throw new Error(j.error||'Erro no envio');
+    else throw new Error(j.error || 'Erro no envio');
   })
-  .catch(err=>alert('Falha ao enviar email: '+err.message));
+  .catch(err => alert('Falha ao enviar email: '+err.message));
 }
